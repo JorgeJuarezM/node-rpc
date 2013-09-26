@@ -4,7 +4,7 @@ node-rpc
 Simple ExpresJS middleware for RPC over Http.
 
 
-let's say we would like to provide add & multiply functions over RPC
+let's say we would like to provide add & multiply functions to browser over RPC
 
 ```javascript
     var remoteObj = {
