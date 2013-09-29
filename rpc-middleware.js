@@ -2,47 +2,30 @@
 module.exports = function(helperUrl, rpcClientClassName, remoteObj){
 
     var express = require('express');
+    var Mustache = require('mustache');
+    var fs = require('fs');
+
     var rpcRouter = new express.Router();
 
     rpcRouter.get('/test', function(req, res){ res.send(200, "test successful..."); });
 
     rpcRouter.get(helperUrl, function(req, res){
 
-        function action(url, dataAndCallbackArguments){
-            var args=[];
-            for(var i=0;i<(dataAndCallbackArguments.length-1);i++){
-                args.push(dataAndCallbackArguments[i]);
-            }
-            var callback = dataAndCallbackArguments[dataAndCallbackArguments.length-1];
-
-            $.ajax({
-                type: 'post',
-                url: url,
-                data: {args:args}
-            }).done(function(data) {
-                    if (callback) callback(null, data);
-                }).fail(function() {
-                    console.log("error");
-                    if (callback) callback('error');
-                });
-        }
-
-        var jsContent = ''+action;
-
-        var rpcClassDec = "var {{RPCClientClassName}} = function(endPointPrefix){ this.endPointPrefix = endPointPrefix; };";
-        rpcClassDec = rpcClassDec.replace('{{RPCClientClassName}}', rpcClientClassName);
-        jsContent += "\n"+rpcClassDec+"\n";
+        var data = {
+            RPCClientClassName : rpcClientClassName,
+            methods: []
+        };
 
         for(method in remoteObj){
             if (typeof(remoteObj[method])==='function'){
-                var nargs = remoteObj[method].length;
-                var funcDef = "{{RPCClientClassName}}.prototype.{{METHOD}} = function(){ action(this.endPointPrefix+'/{{METHOD}}', arguments); };";
-                funcDef = funcDef.replace('{{RPCClientClassName}}', rpcClientClassName);
-                funcDef = funcDef.replace('{{METHOD}}', method);
-                funcDef = funcDef.replace('{{METHOD}}', method);
-                jsContent += "\n"+funcDef+"\n";
+                data.methods.push({method_name:method});
             }
         }
+
+        var helperTemplatePath = require('path').resolve(__dirname, 'helper.mustache');
+
+        var jsContent = Mustache.render(fs.readFileSync(helperTemplatePath).toString(), data);
+
         res.end(jsContent);
     });
 
@@ -57,14 +40,14 @@ module.exports = function(helperUrl, rpcClientClassName, remoteObj){
                 res.set('Content-Type', 'application/json');
                 res.send(200, JSON.stringify(result));
             });
-            fn.apply(null, args);
+            fn.apply({request:req}, args);
         }else{
             res.send(500);
         }
 
     });
 
-
     return rpcRouter;
+
 
 };
