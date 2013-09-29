@@ -9,6 +9,8 @@ let's say we would like to provide add & multiply functions to browser over RPC
 ```javascript
     var remoteObj = {
         add: function(a,b, callback){
+            // access expressjs session like this...
+            //var session = this.request.session;
             callback(null,1*a+1*b);
         },
         multiply: function(a,b, callback){
